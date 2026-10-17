@@ -49,6 +49,8 @@ nav a.on{color:var(--ink);font-weight:600;box-shadow:inset 0 -2px var(--ac)}
 .row .m{color:var(--mu);font-size:13px}
 .acts{display:flex;gap:12px;font-size:13px;color:var(--mu)}.acts a:hover{color:var(--ac)}
 .empty{padding:28px;text-align:center;color:var(--mu)}
+#pill{position:fixed;top:12px;right:16px;background:var(--ink);color:var(--bg);padding:4px 12px;border-radius:99px;font-size:13px;z-index:10}
+.row.f{grid-template-columns:auto 1fr auto auto}
 #dz{border:1.5px dashed var(--mu);border-radius:4px;padding:30px;text-align:center;color:var(--mu)}
 #dz.o{border-color:var(--ac);background:var(--pn)}
 .pre{max-height:200px;overflow:auto;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;background:var(--pn);border:1px solid var(--ln);padding:8px 10px;white-space:pre;margin:10px 0}
@@ -76,7 +78,7 @@ input[type=file]{display:none}
 <p>Create one at GitHub → Settings → Developer settings → Fine-grained tokens. Choose the repositories you want to use, then set these under Repository permissions: <b>Contents</b> (read and write), <b>Pull requests</b> (read and write), <b>Administration</b> (read and write — only for creating, editing or deleting repositories), and <b>Workflows</b> (read and write — only if you upload <code>.github/workflows</code> files). The token is sent only to api.github.com.</p></details>
 </section>
 <div id="app" hidden><aside id="side"></aside><main id="main"></main></div>
-<dialog id="dlg"></dialog><div id="toast" hidden></div>
+<div id="pill" hidden></div><dialog id="dlg"></dialog><div id="toast" hidden></div>
 <script>
 const $=s=>document.querySelector(s),API='https://api.github.com';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -85,7 +87,7 @@ const fmt=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFix
 const bufB64=b=>{const a=new Uint8Array(b);let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s)};
 const b64=t=>bufB64(new TextEncoder().encode(t));
 const unb64=x=>Uint8Array.from(atob(x.replace(/\s/g,'')),c=>c.charCodeAt(0));
-const S={tok:'',me:null,repos:[],repo:null,branch:'',brs:[],path:'',tab:'files',items:[],commits:[],prs:[],up:[],upDir:'',upMsg:'Add files',upStrip:true};
+const S={sel:new Set(),pend:0,hc:null,tok:'',me:null,repos:[],repo:null,branch:'',brs:[],path:'',tab:'files',items:[],commits:[],prs:[],up:[],upDir:'',upMsg:'Add files',upStrip:true};
 const TABS=[['files','Files'],['up','Upload'],['hist','Versions'],['brs','Drafts'],['prs','Pull requests'],['set','Settings']];
 let tt;
 function toast(m,e){const t=$('#toast');t.textContent=m;t.className=e?'e':'';t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,e?9000:3500)}
@@ -108,7 +110,7 @@ function ask(title,fields=[],ok='OK',note=''){return new Promise(res=>{
  d.showModal()})}
 
 /* ---------- Git plumbing (hidden from the user) ---------- */
-async function head(){const r=S.repo.full_name;const sha=(await api('GET',`/repos/${r}/git/ref/heads/${ep(S.branch)}`)).object.sha;const c=await api('GET',`/repos/${r}/git/commits/${sha}`);return{sha,tree:c.tree.sha}}
+async function head(){const r=S.repo.full_name,k=r+'@'+S.branch;if(S.hc&&S.hc.k===k)return S.hc;const sha=(await api('GET',`/repos/${r}/git/ref/heads/${ep(S.branch)}`)).object.sha;const c=await api('GET',`/repos/${r}/git/commits/${sha}`);return S.hc={k,sha,tree:c.tree.sha}}
 async function commit(es,msg){
  const r=S.repo.full_name;let h;
  try{h=await head()}catch(e){
@@ -118,7 +120,7 @@ async function commit(es,msg){
   await api('PUT',`/repos/${r}/contents/${ep(f.path)}`,{message:msg,content:f.b64??b64(f.text),branch:S.branch});
   if(!es.length)return;h=await head()}
  const tree=[];
- await pool(es,4,async x=>{
+ await pool(es,8,async x=>{
   if(x.del){tree.push({path:x.path,mode:'100644',type:'blob',sha:null});return}
   let sha=x.sha;
   if(!sha){if(x.get)x.b64=await x.get();
@@ -126,7 +128,7 @@ async function commit(es,msg){
   tree.push({path:x.path,mode:x.mode||'100644',type:'blob',sha})});
  const nt=await api('POST',`/repos/${r}/git/trees`,{base_tree:h.tree,tree});
  const c=await api('POST',`/repos/${r}/git/commits`,{message:msg,tree:nt.sha,parents:[h.sha]});
- await api('PATCH',`/repos/${r}/git/refs/heads/${ep(S.branch)}`,{sha:c.sha})}
+ await api('PATCH',`/repos/${r}/git/refs/heads/${ep(S.branch)}`,{sha:c.sha});S.hc={k:r+'@'+S.branch,sha:c.sha,tree:nt.sha}}
 async function moveDel(old,nw,dir,msg){
  const h=await head(),t=await api('GET',`/repos/${S.repo.full_name}/git/trees/${h.tree}?recursive=1`);
  if(t.truncated)throw new Error('This repository is too large to move or delete in bulk here.');
@@ -134,21 +136,33 @@ async function moveDel(old,nw,dir,msg){
  if(!hit.length)throw new Error('Nothing found at '+old);
  const es=[];hit.forEach(x=>{es.push({path:x.path,del:1});if(nw!==null)es.push({path:nw+x.path.slice(old.length),sha:x.sha,mode:x.mode})});
  await commit(es,msg)}
-async function save(es,msg,ok='Saved'){const r=await run(async()=>{await commit(es,msg);return 1},ok);if(r)await loadTab();return r}
+let Q=Promise.resolve();
+function pill(){const p=$('#pill');p.hidden=!S.pend;p.textContent='Saving '+S.pend+'…'}
+function bg(fn,ok){S.pend++;pill();Q=Q.then(async()=>{try{try{await fn()}catch(e){if(e.status!==422)throw e;S.hc=null;await fn()}if(ok)toast(ok)}catch(e){S.hc=null;toast(e.message+(e.status===403||e.status===404?' — check the token permissions for this repository.':''),1);try{await loadTab(true)}catch{}}finally{S.pend--;pill()}})}
+async function save(es,msg,ok='Saved'){bg(async()=>{await commit(es,msg);if(S.pend<=1&&S.tab==='files')await loadTab(true)},ok);return 1}
+async function delMany(list){
+ const h=await head(),es=[],dirs=list.filter(x=>x[1]);
+ list.filter(x=>!x[1]).forEach(x=>es.push({path:x[0],del:1}));
+ if(dirs.length){const t=await api('GET',`/repos/${S.repo.full_name}/git/trees/${h.tree}?recursive=1`);
+  if(t.truncated)throw new Error('This repository is too large to delete in bulk here.');
+  t.tree.filter(b=>b.type==='blob'&&dirs.some(d=>!d[0]||b.path.startsWith(d[0]+'/'))).forEach(b=>es.push({path:b.path,del:1}))}
+ if(!es.length)throw new Error('Nothing to delete.');
+ await commit(es,list.length===1?'Delete '+(list[0][0]||'all files'):'Delete '+list.length+' items')}
+const WAIT=new Set(['out','repo','tab','swbr','newbr','delbr','restore','merge','closepr','newpr','edit','delrepo']);
 const cleanPath=p=>p.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
 
 /* ---------- loading ---------- */
 async function loadRepos(){S.repos=await api('GET','/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member')}
-async function openRepo(fn){await run(async()=>{const r=await api('GET','/repos/'+fn);S.repo=r;S.branch=r.default_branch;S.path='';S.tab='files';S.up=[];S.upDir='';
+async function openRepo(fn){await run(async()=>{const r=await api('GET','/repos/'+fn);S.repo=r;S.branch=r.default_branch;S.path='';S.tab='files';S.up=[];S.upDir='';S.sel.clear();
  S.brs=(await api('GET',`/repos/${fn}/branches?per_page=100`)).map(b=>b.name);await loadTab(true)});drawSide()}
 async function loadTab(quiet){
- const go=async()=>{const r=S.repo.full_name,b=encodeURIComponent(S.branch),t=S.tab;
+ const go=async()=>{const r=S.repo.full_name,b=encodeURIComponent(S.branch),t=S.tab;if(t!=='files')S.hc=null;
   if(t==='files'){try{const d=await api('GET',`/repos/${r}/contents${S.path?'/'+ep(S.path):''}?ref=${b}`);
    S.items=(Array.isArray(d)?d:[]).sort((a,c)=>(c.type==='dir')-(a.type==='dir')||a.name.localeCompare(c.name))}catch(e){if(e.status===404)S.items=[];else throw e}}
   if(t==='hist'){try{S.commits=await api('GET',`/repos/${r}/commits?sha=${b}&per_page=30`)}catch(e){if(e.status===404||e.status===409)S.commits=[];else throw e}}
   if(t==='brs')S.brs=(await api('GET',`/repos/${r}/branches?per_page=100`)).map(x=>x.name);
   if(t==='prs')S.prs=await api('GET',`/repos/${r}/pulls?state=open&per_page=30`)};
- if(quiet)await go();else await run(go);
+ if(quiet)await go();else{S.sel.clear();await run(go)}
  render()}
 
 /* ---------- drawing ---------- */
@@ -168,8 +182,8 @@ function render(){
 const PANES={
  files(){
   const crumbs=`<div class="crumbs"><a data-a="cd" data-p="">${esc(S.repo.name)}</a>${S.path?S.path.split('/').map((s,i,a)=>' / <a data-a="cd" data-p="'+esc(a.slice(0,i+1).join('/'))+'">'+esc(s)+'</a>').join(''):''}</div>`;
-  return `<div class="bar">${crumbs}<button data-a="newfile">New file</button><button class="p" data-a="uphere">Upload here</button></div>
-  <div class="list">${S.items.length?S.items.map((x,i)=>{const d=x.type==='dir';return `<div class="row"><a data-a="${d?'cd':'view'}" data-i="${i}" data-p="${esc(x.path)}">${d?'▸ ':''}${esc(x.name)}</a><span class="m">${d?'folder':fmt(x.size)}</span><span class="acts">${d?'':`<a data-a="dl" data-i="${i}">Download</a>`}<a data-a="mv" data-i="${i}">Rename</a><a data-a="rm" data-i="${i}">Delete</a></span></div>`}).join(''):`<div class="empty">Nothing here yet. Upload files or create a new one.</div>`}</div>
+  return `<div class="bar">${crumbs}${S.items.length?`<label class="ck" style="margin:0"><input type="checkbox" data-s="*" ${S.sel.size===S.items.length?'checked':''}> Select all</label>${S.sel.size?`<button class="d" data-a="rmsel">Delete ${S.sel.size} selected</button>`:`<button class="d" data-a="rmall">Delete all</button>`}`:''}<button data-a="newfile">New file</button><button class="p" data-a="uphere">Upload here</button></div>
+  <div class="list">${S.items.length?S.items.map((x,i)=>{const d=x.type==='dir';return `<div class="row f"><input type="checkbox" data-s="${esc(x.path)}" ${S.sel.has(x.path)?'checked':''}><a data-a="${d?'cd':'view'}" data-i="${i}" data-p="${esc(x.path)}">${d?'▸ ':''}${esc(x.name)}</a><span class="m">${d?'folder':fmt(x.size)}</span><span class="acts">${d?'':`<a data-a="dl" data-i="${i}">Download</a>`}<a data-a="mv" data-i="${i}">Rename</a><a data-a="rm" data-i="${i}">Delete</a></span></div>`}).join(''):`<div class="empty">Nothing here yet. Upload files or create a new one.</div>`}</div>
   <p class="help">Looking at draft “${esc(S.branch)}”. Every change you make is saved as a new version in Versions.</p>`},
  up(){
   const ps=planned();
@@ -227,10 +241,22 @@ const A={
  async mv(d){const it=S.items[d.i],dir=it.type==='dir';
   const v=await ask('Rename or move',[{k:'p',l:'New path',v:it.path,req:1}],'Rename');if(!v)return;
   const p=cleanPath(v.p);if(!p||p===it.path)return;
-  const ok=await run(async()=>{await moveDel(it.path,p,dir,`Rename ${it.path} to ${p}`);return 1},'Renamed');if(ok)loadTab()},
- async rm(d){const it=S.items[d.i],dir=it.type==='dir';
-  const v=await ask('Delete '+it.name+'?',[],'Delete','This is saved as a new version, so you can bring it back from Versions.');if(!v)return;
-  const ok=await run(async()=>{await moveDel(it.path,null,dir,'Delete '+it.path);return 1},'Deleted');if(ok)loadTab()},
+  const f=p.includes('/')?p.slice(0,p.lastIndexOf('/')):'',old=it.path,sha=it.sha;
+  if(f===S.path){it.path=p;it.name=p.slice(f?f.length+1:0)}else S.items=S.items.filter(x=>x!==it);
+  S.sel.clear();render();
+  bg(()=>dir?moveDel(old,p,true,`Rename ${old} to ${p}`):commit([{path:old,del:1},{path:p,sha}],`Rename ${old} to ${p}`),'Renamed')},
+ async rm(d){const it=S.items[d.i];
+  const v=await ask('Delete '+it.name+'?',[],'Delete','Saved as a new version, so you can bring it back from Versions.');if(!v)return;
+  S.items=S.items.filter(x=>x!==it);S.sel.clear();render();
+  bg(()=>delMany([[it.path,it.type==='dir']]),'Deleted')},
+ async rmsel(){const its=S.items.filter(x=>S.sel.has(x.path));if(!its.length)return;
+  const v=await ask('Delete '+its.length+' item'+(its.length>1?'s':'')+'?',[],'Delete','Saved as one version, so you can bring them back from Versions.');if(!v)return;
+  S.items=S.items.filter(x=>!S.sel.has(x.path));S.sel.clear();render();
+  bg(()=>delMany(its.map(x=>[x.path,x.type==='dir'])),'Deleted')},
+ async rmall(){const p=S.path;
+  const v=await ask('Delete everything in '+(p||'the whole repository')+'?',[{k:'c',l:'Type DELETE to confirm',req:1}],'Delete all','All files and folders here will be removed in one version. You can restore them from Versions.');if(!v)return;
+  if(v.c.trim()!=='DELETE'){toast('Not confirmed, so nothing was deleted.',1);return}
+  S.items=[];S.sel.clear();render();bg(()=>delMany([[p,true]]),'Everything deleted')},
  pick:d=>$('#'+d.k).click(),
  upclear(){S.up=[];render()},
  async upgo(){const ps=planned();if(!ps.length)return;
@@ -238,7 +264,7 @@ const A={
   const es=ps.map((p,i)=>({path:p,get:S.up[i].get}));
   S.tab='files';S.path=cleanPath(S.upDir||'');
   const ok=await save(es,(S.upMsg||'Add files').trim()||'Add files',ps.length+' file'+(ps.length>1?'s':'')+' uploaded');
-  if(ok)S.up=[];else{S.tab='up';render()}},
+  S.up=[];loadTab()},
  async restore(d){const c=S.commits[d.i];
   const v=await ask('Restore this version?',[],'Restore','Your files will look the way they did in “'+c.commit.message.split('\n')[0]+'”. Nothing is lost.');if(!v)return;
   const ok=await run(async()=>{const r=S.repo.full_name,old=await api('GET',`/repos/${r}/git/commits/${c.sha}`),h=await head();
@@ -263,9 +289,10 @@ const A={
   if(v.n.trim()!==r.name){toast('The name didn’t match, so nothing was deleted.',1);return}
   const ok=await run(()=>api('DELETE','/repos/'+r.full_name),'Repository deleted');
   if(ok!==undefined){S.repo=null;await run(loadRepos);drawSide();render()}}};
-document.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a||!A[a.dataset.a])return;e.preventDefault();A[a.dataset.a](a.dataset)});
+document.addEventListener('click',async e=>{const a=e.target.closest('[data-a]');if(!a||!A[a.dataset.a])return;e.preventDefault();if(WAIT.has(a.dataset.a))await Q;A[a.dataset.a](a.dataset)});
 document.addEventListener('change',e=>{const t=e.target;
- if(t.id==='br'){S.branch=t.value;S.path='';loadTab();return}
+ if(t.dataset.s!==undefined){if(t.dataset.s==='*')S.sel=t.checked?new Set(S.items.map(x=>x.path)):new Set();else t.checked?S.sel.add(t.dataset.s):S.sel.delete(t.dataset.s);render();return}
+ if(t.id==='br'){Q.then(()=>{S.branch=t.value;S.path='';loadTab()});return}
  if(['zf','ff','df'].includes(t.id)&&t.files.length){addFiles([...t.files]);t.value=''}
  if(t.dataset.k){S[t.dataset.k]=t.type==='checkbox'?t.checked:t.value;if(t.type==='checkbox')render()}});
 document.addEventListener('input',e=>{const t=e.target;
@@ -274,6 +301,7 @@ document.addEventListener('input',e=>{const t=e.target;
 ['dragenter','dragover'].forEach(n=>document.addEventListener(n,e=>{const z=e.target.closest&&e.target.closest('#dz');if(z){e.preventDefault();z.classList.add('o')}}));
 ['dragleave','drop'].forEach(n=>document.addEventListener(n,e=>{const z=e.target.closest&&e.target.closest('#dz');if(z){e.preventDefault();z.classList.remove('o');if(n==='drop'&&e.dataTransfer.files.length)addFiles([...e.dataTransfer.files])}}));
 
+addEventListener('beforeunload',e=>{if(S.pend){e.preventDefault();e.returnValue=''}});
 /* ---------- sign in ---------- */
 async function signIn(tok,remember){
  S.tok=tok.trim();if(!S.tok)return;

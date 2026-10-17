@@ -17,7 +17,7 @@ There is no server and no build step. The whole app is one file, `index.html`.
 | Pull request | pull request | Sends a draft's changes back to the main version. |
 
 - **Repositories**: list and filter yours, create new ones, edit name, description and visibility, delete (with a typed confirmation).
-- **Files**: browse folders, edit text files, create files, rename or move files and folders, delete, download.
+- **Files**: browse folders, edit text files, create files, rename or move files and folders, download. Delete one item, tick several and delete them together, or delete everything in a folder. Changes save in the background, so you can keep working.
 - **Upload**: drop in a `.zip` (it is opened for you), loose files, or a whole folder. Everything lands as one version. Files with the same path are replaced.
 - **Versions**: see history and restore any earlier version.
 - **Drafts**: create, switch and delete.
