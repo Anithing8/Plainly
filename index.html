@@ -2,10 +2,12 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Plainly — GitHub without the Git</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://api.github.com">
+<meta name="theme-color" content="#b8401f">
 <style>
-:root{--bg:#f4f1ea;--pn:#fbfaf6;--ink:#1d1c1a;--mu:#76726a;--ln:#d9d4c7;--ac:#b8401f;--ok:#2d6a3e;color-scheme:light}
-@media(prefers-color-scheme:dark){:root{--bg:#171614;--pn:#201f1c;--ink:#ece8de;--mu:#9a958a;--ln:#37352f;--ac:#e0704e;--ok:#6fbf86;color-scheme:dark}}
+:root{--bg:#f4f1ea;--pn:#fbfaf6;--ink:#1d1c1a;--mu:#76726a;--ln:#d9d4c7;--ac:#b8401f;--ok:#2d6a3e;--hv:#ece8dc;--sh:0 1px 2px #0001,0 6px 18px #0000000f;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#171614;--pn:#201f1c;--ink:#ece8de;--mu:#9a958a;--ln:#37352f;--ac:#e0704e;--ok:#6fbf86;--hv:#2a2824;--sh:0 1px 2px #0006,0 6px 18px #0004;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#171614;--pn:#201f1c;--ink:#ece8de;--mu:#9a958a;--ln:#37352f;--ac:#e0704e;--ok:#6fbf86;--hv:#2a2824;--sh:0 1px 2px #0006,0 6px 18px #0004;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 h1,h2,h3,.brand{font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-.01em}
@@ -65,20 +67,74 @@ dialog h3{margin:0 0 6px}dialog textarea{font:13px/1.5 ui-monospace,Menlo,Consol
 #toast.e{background:var(--ac);color:#fff}
 input[type=file]{display:none}
 @media(max-width:820px){#app{grid-template-columns:1fr}aside{position:static;height:auto;border:0;border-bottom:1px solid var(--ln)}aside ul{max-height:160px;overflow:auto}main{padding:20px 16px}}
+
+/* ---- polish ---- */
+[hidden]{display:none!important}
+body{-webkit-font-smoothing:antialiased}
+button{border-radius:6px;font-weight:500;transition:background .15s,color .15s,border-color .15s,transform .05s}
+button:hover:not(:disabled){background:var(--hv)}
+button.p:hover:not(:disabled){background:var(--ac);border-color:var(--ac);color:#fff}
+button.d:hover:not(:disabled){background:var(--ac);color:#fff}
+button:active:not(:disabled){transform:translateY(1px)}
+input:not([type=checkbox]),select,textarea{border-radius:6px;transition:border-color .15s,box-shadow .15s}
+input:not([type=checkbox]):focus,select:focus,textarea:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 22%,transparent)}
+input[type=checkbox]{accent-color:var(--ac);width:16px;height:16px;flex:none}
+a[data-a]{cursor:pointer}
+#login{width:calc(100% - 32px);padding:32px 28px;background:var(--pn);border:1px solid var(--ln);border-radius:14px;box-shadow:var(--sh)}
+aside li a{transition:background .12s}
+.sf{margin-top:16px;padding-top:12px;border-top:1px solid var(--ln);font-size:13px;color:var(--mu)}
+.sf a:hover{color:var(--ac)}
+nav a{border-radius:6px 6px 0 0;transition:background .12s,color .12s}
+nav a:hover{background:var(--hv);color:var(--ink)}
+.list{border-radius:10px;overflow:hidden;box-shadow:var(--sh)}
+.row{transition:background .12s}
+.row:hover{background:var(--hv)}
+.row.f>a[data-a=view],.row.f>a[data-a=cd]{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acts a{padding:2px 6px;border-radius:4px;text-decoration:none}
+.acts a:hover{background:var(--bg)}
+.tools{gap:10px}
+.tools input[type=search]{width:100%;max-width:240px}
+.tools select{width:auto}
+.tools .ck{margin:0 0 0 auto}
+.menu{display:none;align-items:center;gap:6px;padding:6px 10px}
+#scrim{display:none;position:fixed;inset:0;background:#0006;z-index:25}
+dialog{border-radius:12px;box-shadow:0 20px 60px #0006}
+dialog::backdrop{backdrop-filter:blur(2px)}
+#toast{border-radius:8px;box-shadow:var(--sh);animation:up .2s}
+@keyframes up{from{opacity:0;transform:translate(-50%,8px)}}
+#pill{box-shadow:var(--sh)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:820px){
+ aside{position:fixed;left:0;top:0;bottom:0;width:min(84vw,320px);height:auto;z-index:30;transform:translateX(-102%);transition:transform .2s;border-right:1px solid var(--ln);border-bottom:0;box-shadow:var(--sh)}
+ aside ul{max-height:none}
+ body.nav aside{transform:none}
+ body.nav #scrim{display:block}
+ .menu{display:inline-flex}
+ .row{grid-template-columns:1fr auto}
+ .row>span:empty{display:none}
+ .row.f{grid-template-columns:auto 1fr}
+ .row.f .m{display:none}
+ .row.f .acts{grid-column:2;flex-wrap:wrap}
+ .tools input[type=search]{max-width:none;flex:1 1 100%}
+ .tools .ck{margin-left:0}
+ #pill{top:auto;bottom:70px}
+}
 </style></head><body>
 <div id="bar" hidden></div>
 <section id="login">
-<h1>Plainly</h1>
+<h1>Plainly<span style="color:var(--ac)">.</span></h1>
 <p>Work with your GitHub repositories — browse, edit, upload, undo — without learning Git.</p>
 <label for="tk">GitHub fine-grained token</label>
 <input id="tk" type="password" placeholder="github_pat_…" autocomplete="off">
+<label class="ck"><input type="checkbox" id="sh"> Show token</label>
 <label class="ck"><input type="checkbox" id="rm"> Remember me on this device</label>
 <p><button class="p" id="si">Sign in</button></p>
 <details><summary>Which token permissions do I need?</summary>
-<p>Create one at GitHub → Settings → Developer settings → Fine-grained tokens. Choose the repositories you want to use, then set these under Repository permissions: <b>Contents</b> (read and write), <b>Pull requests</b> (read and write), <b>Administration</b> (read and write — only for creating, editing or deleting repositories), and <b>Workflows</b> (read and write — only if you upload <code>.github/workflows</code> files). The token is sent only to api.github.com.</p></details>
+<p>Create one at GitHub → Settings → Developer settings → Fine-grained tokens. Choose the repositories you want to use, then set these under Repository permissions: <b>Contents</b> (read and write), <b>Pull requests</b> (read and write), <b>Administration</b> (read and write — only for creating, editing or deleting repositories), and <b>Workflows</b> (read and write — only if you upload <code>.github/workflows</code> files). The token is sent only to api.github.com.</p><p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a token on GitHub ↗</a></p></details>
+<p class="help"><a data-a="theme">Theme: <span class="thl"></span></a></p>
 </section>
-<div id="app" hidden><aside id="side"></aside><main id="main"></main></div>
-<div id="pill" hidden></div><dialog id="dlg"></dialog><div id="toast" hidden></div>
+<div id="app" hidden><aside id="side"></aside><div id="scrim" data-a="menu"></div><main id="main"></main></div>
+<div id="pill" hidden role="status"></div><dialog id="dlg"></dialog><div id="toast" hidden role="status" aria-live="polite"></div>
 <script>
 const $=s=>document.querySelector(s),API='https://api.github.com';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -87,7 +143,7 @@ const fmt=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFix
 const bufB64=b=>{const a=new Uint8Array(b);let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s)};
 const b64=t=>bufB64(new TextEncoder().encode(t));
 const unb64=x=>Uint8Array.from(atob(x.replace(/\s/g,'')),c=>c.charCodeAt(0));
-const S={sel:new Set(),pend:0,hc:null,tok:'',me:null,repos:[],repo:null,branch:'',brs:[],path:'',tab:'files',items:[],commits:[],prs:[],up:[],upDir:'',upMsg:'Add files',upStrip:true};
+const S={cache:new Map(),fq:'',sort:'name',cpage:1,cmore:false,sel:new Set(),pend:0,hc:null,tok:'',me:null,repos:[],repo:null,branch:'',brs:[],path:'',tab:'files',items:[],commits:[],prs:[],up:[],upDir:'',upMsg:'Add files',upStrip:true};
 const TABS=[['files','Files'],['up','Upload'],['hist','Versions'],['brs','Drafts'],['prs','Pull requests'],['set','Settings']];
 let tt;
 function toast(m,e){const t=$('#toast');t.textContent=m;t.className=e?'e':'';t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,e?9000:3500)}
@@ -95,17 +151,19 @@ async function api(m,p,b){
  const r=await fetch(p.startsWith('http')?p:API+p,{method:m,headers:{Authorization:'Bearer '+S.tok,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(b?{'Content-Type':'application/json'}:{})},body:b?JSON.stringify(b):undefined});
  const t=await r.text();let d=null;if(t){try{d=JSON.parse(t)}catch{d={message:t}}}
  if(!r.ok){const e=new Error((d&&d.message)||r.statusText);e.status=r.status;e.needs=r.headers.get('x-accepted-github-permissions');throw e}
+ if(m!=='GET')S.cache.clear();
  return d}
-async function run(fn,ok){$('#bar').hidden=false;try{const v=await fn();if(ok)toast(ok);return v}
- catch(e){let h='';if(e.status===401)h=' — the token is invalid or expired.';else if(e.status===403||e.status===404)h=' — check that the token can access this repository and has the right permission'+(e.needs?' ('+e.needs+')':'')+'.';toast(e.message+h,1)}
- finally{$('#bar').hidden=true}}
+let busy=0;
+async function run(fn,ok){busy++;$('#bar').hidden=false;try{const v=await fn();if(ok)toast(ok);return v}
+ catch(e){let h='';if(e.status===401)h=' — the token is invalid or expired.';else if(e.status===403&&/rate limit/i.test(e.message))h=' — GitHub is limiting requests. Wait a minute and try again.';else if(e.status===403||e.status===404)h=' — check that the token can access this repository and has the right permission'+(e.needs?' ('+e.needs+')':'')+'.';toast(e.message+h,1)}
+ finally{if(!--busy)$('#bar').hidden=true}}
 async function pool(a,n,f){let i=0;await Promise.all(Array.from({length:Math.min(n,a.length)},async()=>{while(i<a.length){const k=i++;await f(a[k],k)}}))}
 function ask(title,fields=[],ok='OK',note=''){return new Promise(res=>{
  const d=$('#dlg');
  const fh=f=>f.t==='check'?`<label class="ck"><input type="checkbox" name="${f.k}" ${f.v?'checked':''}> ${esc(f.l)}</label>`:
- `<label>${esc(f.l||'')}${f.t==='area'?`<textarea name="${f.k}" rows="18" spellcheck="false">${esc(f.v)}</textarea>`:f.t==='sel'?`<select name="${f.k}">${f.o.map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select>`:`<input name="${f.k}" value="${esc(f.v)}" ${f.req?'required':''} spellcheck="false">`}</label>`;
+ `<label>${esc(f.l||'')}${f.t==='area'?`<textarea name="${f.k}" rows="18" spellcheck="false">${esc(f.v)}</textarea>`:f.t==='sel'?`<select name="${f.k}">${f.o.map(o=>`<option value="${esc(o[0])}" ${o[0]===f.v?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`:`<input name="${f.k}" value="${esc(f.v)}" ${f.req?'required':''} spellcheck="false">`}</label>`;
  d.innerHTML=`<form method="dialog"><h3>${esc(title)}</h3>${note?`<p class="help">${esc(note)}</p>`:''}${fields.map(fh).join('')}<div class="r"><button value="ok" class="p">${esc(ok)}</button><button value="x" formnovalidate>Cancel</button></div></form>`;
- d.returnValue='';
+ d.returnValue='';d.onkeydown=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();const f=d.querySelector('form');if(f.reportValidity())f.requestSubmit(f.querySelector('button.p'))}};
  d.onclose=()=>{if(d.returnValue!=='ok')return res(null);const o={};fields.forEach(f=>{const el=d.querySelector(`[name="${f.k}"]`);o[f.k]=f.t==='check'?el.checked:el.value});res(o)};
  d.showModal()})}
 
@@ -152,38 +210,46 @@ const WAIT=new Set(['out','repo','tab','swbr','newbr','delbr','restore','merge',
 const cleanPath=p=>p.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
 
 /* ---------- loading ---------- */
-async function loadRepos(){S.repos=await api('GET','/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member')}
-async function openRepo(fn){await run(async()=>{const r=await api('GET','/repos/'+fn);S.repo=r;S.branch=r.default_branch;S.path='';S.tab='files';S.up=[];S.upDir='';S.sel.clear();
- S.brs=(await api('GET',`/repos/${fn}/branches?per_page=100`)).map(b=>b.name);await loadTab(true)});drawSide()}
+async function loadRepos(){let all=[];for(let p=1;p<=10;p++){const d=await api('GET','/user/repos?per_page=100&page='+p+'&sort=updated&affiliation=owner,collaborator,organization_member');all=all.concat(d);if(d.length<100)break}S.repos=all}
+async function allBranches(r){let all=[];for(let p=1;p<=10;p++){const d=await api('GET',`/repos/${r}/branches?per_page=100&page=${p}`);all=all.concat(d.map(b=>b.name));if(d.length<100)break}return all}
+async function openRepo(fn){await run(async()=>{const[r,brs]=await Promise.all([api('GET','/repos/'+fn),allBranches(fn)]);S.repo=r;S.brs=brs;S.fq='';document.body.classList.remove('nav');S.branch=r.default_branch;S.path='';S.tab='files';S.up=[];S.upDir='';S.sel.clear();
+ await loadTab(true)});drawSide()}
 async function loadTab(quiet){
  const go=async()=>{const r=S.repo.full_name,b=encodeURIComponent(S.branch),t=S.tab;if(t!=='files')S.hc=null;
-  if(t==='files'){try{const d=await api('GET',`/repos/${r}/contents${S.path?'/'+ep(S.path):''}?ref=${b}`);
-   S.items=(Array.isArray(d)?d:[]).sort((a,c)=>(c.type==='dir')-(a.type==='dir')||a.name.localeCompare(c.name))}catch(e){if(e.status===404)S.items=[];else throw e}}
-  if(t==='hist'){try{S.commits=await api('GET',`/repos/${r}/commits?sha=${b}&per_page=30`)}catch(e){if(e.status===404||e.status===409)S.commits=[];else throw e}}
-  if(t==='brs')S.brs=(await api('GET',`/repos/${r}/branches?per_page=100`)).map(x=>x.name);
+  if(t==='files'){const ck=r+'@'+S.branch+':'+S.path,c=S.cache.get(ck);
+   if(c&&!quiet){S.items=c;sortItems();render()}
+   let it;try{const d=await api('GET',`/repos/${r}/contents${S.path?'/'+ep(S.path):''}?ref=${b}`);it=Array.isArray(d)?d:[]}catch(e){if(e.status===404)it=[];else throw e}
+   S.cache.set(ck,it);if(r+'@'+S.branch+':'+S.path===ck){S.items=it;sortItems()}}
+  if(t==='hist'){try{S.commits=await api('GET',`/repos/${r}/commits?sha=${b}&per_page=30`);S.cpage=1;S.cmore=S.commits.length===30}catch(e){if(e.status===404||e.status===409){S.commits=[];S.cmore=false}else throw e}}
+  if(t==='brs')S.brs=await allBranches(r);
   if(t==='prs')S.prs=await api('GET',`/repos/${r}/pulls?state=open&per_page=30`)};
  if(quiet)await go();else{S.sel.clear();await run(go)}
  render()}
 
 /* ---------- drawing ---------- */
 function drawSide(){
+ const qv=($('#q')||{}).value||'',ql=qv.toLowerCase();
  $('#side').innerHTML=`<div class="brand">Plainly</div><div class="me">${esc(S.me.login)} · <a data-a="out">Sign out</a></div>
  <button class="p" data-a="newrepo" style="width:100%">New repository</button>
- <input id="q" placeholder="Filter repositories" style="margin-top:10px">
- <ul>${S.repos.map(r=>`<li data-n="${esc(r.full_name.toLowerCase())}"><a data-a="repo" data-n="${esc(r.full_name)}" class="${S.repo&&S.repo.full_name===r.full_name?'on':''}" title="${esc(r.full_name)}">${esc(r.owner.login===S.me.login?r.name:r.full_name)}${r.private?' 🔒':''}</a></li>`).join('')}</ul>`}
+ <input id="q" type="search" placeholder="Filter repositories" aria-label="Filter repositories" value="${esc(qv)}" style="margin-top:10px">
+ <ul>${S.repos.map(r=>`<li data-n="${esc(r.full_name.toLowerCase())}" ${r.full_name.toLowerCase().includes(ql)?'':'hidden'}><a data-a="repo" data-n="${esc(r.full_name)}" class="${S.repo&&S.repo.full_name===r.full_name?'on':''}" title="${esc(r.full_name)}">${esc(r.owner.login===S.me.login?r.name:r.full_name)}${r.private?' 🔒':''}</a></li>`).join('')}</ul><div class="sf"><a data-a="theme">Theme: <span class="thl"></span></a></div>`;a11y($('#side'));applyTheme()}
 function render(){
  const m=$('#main'),r=S.repo;
- if(!r){m.innerHTML=`<h2 style="font-size:30px">Pick a repository</h2><p class="help">A repository is a project folder on GitHub. Choose one on the left, or create a new one. Everything you change is saved as a “version”, so you can always go back.</p>`;return}
+ if(!r){m.innerHTML=`<button class="menu" data-a="menu" aria-label="Open menu">☰ Repositories</button><h2 style="font-size:30px">Pick a repository</h2><p class="help">A repository is a project folder on GitHub. Choose one on the left, or create a new one. Everything you change is saved as a “version”, so you can always go back.</p>`;a11y(m);return}
  const brs=[...new Set([S.branch,...S.brs])];
- m.innerHTML=`<div class="top"><h2>${esc(r.name)}</h2><span class="tag">${r.private?'Private':'Public'}</span>
+ m.innerHTML=`<div class="top"><button class="menu" data-a="menu" aria-label="Open menu">☰</button><h2>${esc(r.name)}</h2><span class="tag">${r.private?'Private':'Public'}</span>
  <label>Draft <select id="br" title="A draft (Git calls it a branch) is a separate copy of your work.">${brs.map(b=>`<option ${b===S.branch?'selected':''}>${esc(b)}</option>`).join('')}</select></label>
  <a href="${esc(r.html_url)}" target="_blank" rel="noopener" class="help">Open on GitHub ↗</a></div>
- <nav>${TABS.map(t=>`<a data-a="tab" data-t="${t[0]}" class="${S.tab===t[0]?'on':''}">${t[1]}</a>`).join('')}</nav><div id="pane">${PANES[S.tab]()}</div>`}
+ <nav>${TABS.map(t=>`<a data-a="tab" data-t="${t[0]}" class="${S.tab===t[0]?'on':''}">${t[1]}</a>`).join('')}</nav><div id="pane">${PANES[S.tab]()}</div>`;a11y(m)}
+function renderPane(){const p=$('#pane');if(p){p.innerHTML=PANES[S.tab]();a11y(p)}}
 const PANES={
  files(){
-  const crumbs=`<div class="crumbs"><a data-a="cd" data-p="">${esc(S.repo.name)}</a>${S.path?S.path.split('/').map((s,i,a)=>' / <a data-a="cd" data-p="'+esc(a.slice(0,i+1).join('/'))+'">'+esc(s)+'</a>').join(''):''}</div>`;
-  return `<div class="bar">${crumbs}${S.items.length?`<label class="ck" style="margin:0"><input type="checkbox" data-s="*" ${S.sel.size===S.items.length?'checked':''}> Select all</label>${S.sel.size?`<button class="d" data-a="rmsel">Delete ${S.sel.size} selected</button>`:`<button class="d" data-a="rmall">Delete all</button>`}`:''}<button data-a="newfile">New file</button><button class="p" data-a="uphere">Upload here</button></div>
-  <div class="list">${S.items.length?S.items.map((x,i)=>{const d=x.type==='dir';return `<div class="row f"><input type="checkbox" data-s="${esc(x.path)}" ${S.sel.has(x.path)?'checked':''}><a data-a="${d?'cd':'view'}" data-i="${i}" data-p="${esc(x.path)}">${d?'▸ ':''}${esc(x.name)}</a><span class="m">${d?'folder':fmt(x.size)}</span><span class="acts">${d?'':`<a data-a="dl" data-i="${i}">Download</a>`}<a data-a="mv" data-i="${i}">Rename</a><a data-a="rm" data-i="${i}">Delete</a></span></div>`}).join(''):`<div class="empty">Nothing here yet. Upload files or create a new one.</div>`}</div>
+  const r=S.repo,q=S.fq.toLowerCase(),gh=x=>r.html_url+'/'+(x.type==='dir'?'tree':'blob')+'/'+ep(S.branch)+'/'+ep(x.path);
+  const crumbs=`<div class="crumbs"><a data-a="cd" data-p="">${esc(r.name)}</a>${S.path?S.path.split('/').map((s,i,a)=>' / <a data-a="cd" data-p="'+esc(a.slice(0,i+1).join('/'))+'">'+esc(s)+'</a>').join(''):''}</div>`;
+  const vis=S.items.filter(x=>x.name.toLowerCase().includes(q));
+  return `<div class="bar">${crumbs}<button data-a="newfile">New file</button><button class="p" data-a="uphere">Upload here</button></div>
+  ${S.items.length?`<div class="bar tools"><input id="fq" type="search" placeholder="Filter this folder" aria-label="Filter this folder" value="${esc(S.fq)}"><select id="so" aria-label="Sort files"><option value="name" ${S.sort==='name'?'selected':''}>Sort by name</option><option value="size" ${S.sort==='size'?'selected':''}>Sort by size</option></select><label class="ck"><input type="checkbox" data-s="*" ${vis.length&&vis.every(x=>S.sel.has(x.path))?'checked':''}> Select all</label>${S.sel.size?`<button class="d" data-a="rmsel">Delete ${S.sel.size} selected</button>`:`<button class="d" data-a="rmall">Delete all</button>`}</div>`:''}
+  <div class="list">${S.items.length?S.items.map((x,i)=>{const d=x.type==='dir';return `<div class="row f" data-n="${esc(x.name.toLowerCase())}" ${x.name.toLowerCase().includes(q)?'':'hidden'}><input type="checkbox" data-s="${esc(x.path)}" aria-label="Select ${esc(x.name)}" ${S.sel.has(x.path)?'checked':''}><a data-a="${d?'cd':'view'}" data-i="${i}" data-p="${esc(x.path)}">${d?'📁 ':'📄 '}${esc(x.name)}</a><span class="m">${d?'folder':fmt(x.size)}</span><span class="acts">${d?'':`<a data-a="dl" data-i="${i}">Download</a>`}<a data-a="mv" data-i="${i}">Rename</a><a data-a="rm" data-i="${i}">Delete</a><a href="${esc(gh(x))}" target="_blank" rel="noopener" title="Open on GitHub">GitHub ↗</a></span></div>`}).join('')+`<div class="empty" id="nf" ${vis.length?'hidden':''}>No files match your filter.</div>`:`<div class="empty">Nothing here yet. Upload files or create a new one.</div>`}</div>
   <p class="help">Looking at draft “${esc(S.branch)}”. Every change you make is saved as a new version in Versions.</p>`},
  up(){
   const ps=planned();
@@ -195,24 +261,42 @@ const PANES={
   <label class="ck"><input type="checkbox" data-k="upStrip" ${S.upStrip?'checked':''}> If everything sits inside one folder, remove that outer folder</label>
   <p><button class="p" data-a="upgo" ${ps.length?'':'disabled'}>Upload ${ps.length||''} file${ps.length===1?'':'s'}</button></p>
   <p class="help">Zip files are opened for you. Everything goes in as one version, and files with the same name are replaced.</p>`},
- hist(){return S.commits.length?`<div class="list">${S.commits.map((c,i)=>`<div class="row"><span><b>${esc(c.commit.message.split('\n')[0])}</b><br><span class="m">${esc(c.commit.author.name)} · ${new Date(c.commit.author.date).toLocaleString()} · <a href="${esc(c.html_url)}" target="_blank" rel="noopener">${c.sha.slice(0,7)}</a></span></span><span></span><span class="acts">${i?`<a data-a="restore" data-i="${i}">Restore this version</a>`:'<span class="cur">current</span>'}</span></div>`).join('')}</div><p class="help">Restoring doesn’t erase anything: it adds a new version that looks like the old one, so you can undo the restore too.</p>`:`<div class="empty">No versions yet.</div>`},
+ hist(){return S.commits.length?`<div class="list">${S.commits.map((c,i)=>`<div class="row"><span><b>${esc(c.commit.message.split('\n')[0])}</b><br><span class="m">${esc(c.commit.author.name)} · ${new Date(c.commit.author.date).toLocaleString()} · <a href="${esc(c.html_url)}" target="_blank" rel="noopener">${c.sha.slice(0,7)}</a></span></span><span></span><span class="acts">${i?`<a data-a="restore" data-i="${i}">Restore this version</a>`:'<span class="cur">current</span>'}</span></div>`).join('')}</div>${S.cmore?'<p><button data-a="morec">Load older versions</button></p>':''}<p class="help">Restoring doesn’t erase anything: it adds a new version that looks like the old one, so you can undo the restore too.</p>`:`<div class="empty">No versions yet.</div>`},
  brs(){return `<div class="bar"><button class="p" data-a="newbr">New draft from “${esc(S.branch)}”</button></div><div class="list">${S.brs.map((b,i)=>`<div class="row"><span>${esc(b)}${b===S.repo.default_branch?'<span class="cur">main version</span>':''}${b===S.branch?'<span class="cur">viewing</span>':''}</span><span></span><span class="acts">${b===S.branch?'':`<a data-a="swbr" data-i="${i}">Switch</a>`}${b===S.repo.default_branch?'':`<a data-a="delbr" data-i="${i}">Delete</a>`}</span></div>`).join('')||'<div class="empty">No drafts yet.</div>'}</div><p class="help">A draft lets you try changes without touching the main version. When you’re happy, send it for merging in Pull requests.</p>`},
  prs(){const d=S.repo.default_branch;return `${S.branch!==d?`<div class="bar"><button class="p" data-a="newpr">Send “${esc(S.branch)}” to “${esc(d)}”</button></div>`:`<p class="help">Switch to a draft to send its changes to “${esc(d)}”.</p>`}
   <div class="list">${S.prs.map((p,i)=>`<div class="row"><span><b>#${p.number} ${esc(p.title)}</b><br><span class="m">${esc(p.head.ref)} → ${esc(p.base.ref)} · ${esc(p.user.login)} · <a href="${esc(p.html_url)}" target="_blank" rel="noopener">view</a></span></span><span></span><span class="acts"><a data-a="merge" data-i="${i}">Merge</a><a data-a="closepr" data-i="${i}">Close</a></span></div>`).join('')||'<div class="empty">No open pull requests.</div>'}</div>`},
- set(){const r=S.repo;return `<p>${esc(r.description||'No description')}</p><p class="bar"><button data-a="edit">Edit name, description, visibility</button></p>
+ set(){const r=S.repo;return `<p>${esc(r.description||'No description')}</p><p class="help">Last updated ${new Date(r.pushed_at||r.updated_at).toLocaleString()} · ${fmt((r.size||0)*1024)} · main version “${esc(r.default_branch)}”</p><p class="bar"><button data-a="edit">Edit name, description, visibility</button><button data-a="defbr">Change main version</button><button data-a="copylink">Copy link</button></p>
   <h3 style="margin-top:30px">Danger zone</h3><p class="help">Deleting a repository removes it from GitHub for good, with all its versions.</p><button class="d" data-a="delrepo">Delete this repository</button>`}};
 function planned(){
  let ps=S.up.map(f=>f.p);
  if(S.upStrip&&ps.length){const t=ps[0].split('/')[0];if(ps.every(p=>p.includes('/')&&p.split('/')[0]===t))ps=ps.map(p=>p.slice(t.length+1))}
  const d=cleanPath(S.upDir||'');return ps.map(p=>d?d+'/'+p:p)}
 
+/* ---------- helpers ---------- */
+const IMG=/\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i,MIME={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml',bmp:'image/bmp',ico:'image/x-icon'},THEMES=['auto','light','dark'];
+function a11y(root){root.querySelectorAll('a[data-a]').forEach(a=>{a.tabIndex=0;a.setAttribute('role','button')})}
+function sortItems(){const k=S.sort;S.items.sort((a,c)=>(c.type==='dir')-(a.type==='dir')||(k==='size'?c.size-a.size:0)||a.name.localeCompare(c.name,undefined,{numeric:true}))}
+function filterRows(){const q=S.fq.toLowerCase();let n=0;document.querySelectorAll('#pane .row.f').forEach(r=>{const h=!r.dataset.n.includes(q);r.hidden=h;if(!h)n++});const nf=$('#nf');if(nf)nf.hidden=n>0}
+function getTheme(){try{return localStorage.getItem('pl_th')||'auto'}catch{return'auto'}}
+function applyTheme(){const t=getTheme(),h=document.documentElement;t==='auto'?h.removeAttribute('data-theme'):h.dataset.theme=t;document.querySelectorAll('.thl').forEach(e=>e.textContent=t[0].toUpperCase()+t.slice(1))}
+let zipP;function loadZip(){if(window.JSZip)return Promise.resolve();return zipP||(zipP=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';s.onload=res;s.onerror=()=>{zipP=null;rej(new Error('Couldn’t load the zip reader. Check your connection.'))};document.head.append(s)}))}
+function showImg(name,bytes,type){const d=$('#dlg'),u=URL.createObjectURL(new Blob([bytes],{type}));d.innerHTML=`<form method="dialog"><h3>${esc(name)}</h3><img src="${u}" alt="${esc(name)}" style="max-width:100%;max-height:70vh;display:block;margin:12px auto"><div class="r"><button value="x">Close</button></div></form>`;d.onclose=()=>URL.revokeObjectURL(u);d.onkeydown=null;d.showModal()}
+function addUp(x){const i=S.up.findIndex(y=>y.p===x.p);i<0?S.up.push(x):S.up[i]=x}
+async function dropFiles(dt){
+ const ents=[...dt.items].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean);
+ if(!ents.length)return[...dt.files];
+ const out=[],walk=async(en,pre)=>{
+  if(en.isFile){const f=await new Promise((s,j)=>en.file(s,j));out.push(Object.assign(f,{_p:pre+en.name}))}
+  else if(en.isDirectory){const rd=en.createReader();let all=[];for(;;){const b=await new Promise((s,j)=>rd.readEntries(s,j));if(!b.length)break;all=all.concat(b)}for(const c of all)await walk(c,pre+en.name+'/')}};
+ for(const e of ents)await walk(e,'');return out}
+
 /* ---------- uploads ---------- */
 const JUNK=p=>p.startsWith('__MACOSX/')||/(^|\/)(\.DS_Store|Thumbs\.db)$/.test(p);
 async function addFiles(list){
- await run(async()=>{for(const f of list){
+ await run(async()=>{if(list.some(f=>/\.zip$/i.test(f.name)))await loadZip();for(const f of list){
   if(/\.zip$/i.test(f.name)){const z=await JSZip.loadAsync(f);
-   Object.values(z.files).filter(e=>!e.dir&&!JUNK(e.name)).forEach(e=>S.up.push({p:e.name,get:()=>e.async('base64')}))}
-  else S.up.push({p:f.webkitRelativePath||f.name,get:async()=>bufB64(await f.arrayBuffer())})}});
+   Object.values(z.files).filter(e=>!e.dir&&!JUNK(e.name)).forEach(e=>addUp({p:e.name,get:()=>e.async('base64')}))}
+  else addUp({p:f._p||f.webkitRelativePath||f.name,get:async()=>bufB64(await f.arrayBuffer())})}});
  render()}
 
 /* ---------- actions ---------- */
@@ -223,9 +307,15 @@ const A={
   const r=await run(()=>api('POST','/user/repos',{name:v.n.trim().replace(/\s+/g,'-'),description:v.d,private:v.pv,auto_init:v.rd}),'Repository created');
   if(r){await run(loadRepos);openRepo(r.full_name)}},
  tab(d){S.tab=d.t;if(d.t==='up'&&!S.upDir)S.upDir=S.path;loadTab(d.t==='up'||d.t==='set')},
- cd(d){S.path=d.p;S.tab='files';loadTab()},
+ cd(d){S.path=d.p;S.fq='';S.tab='files';loadTab()},
+ menu(){document.body.classList.toggle('nav')},
+ theme(){const t=THEMES[(THEMES.indexOf(getTheme())+1)%3];try{localStorage.setItem('pl_th',t)}catch{}applyTheme()},
+ async morec(){const r=S.repo.full_name,b=encodeURIComponent(S.branch);const d=await run(()=>api('GET',`/repos/${r}/commits?sha=${b}&per_page=30&page=${S.cpage+1}`));if(!d)return;S.cpage++;S.commits=S.commits.concat(d);S.cmore=d.length===30;renderPane()},
+ async defbr(){const r=S.repo;const v=await ask('Change main version',[{k:'b',t:'sel',l:'Main draft',v:r.default_branch,o:S.brs.map(b=>[b,b])}],'Save','The main version is what people see first on GitHub.');if(!v||v.b===r.default_branch)return;const u=await run(()=>api('PATCH','/repos/'+r.full_name,{default_branch:v.b}),'Main version changed');if(u){S.repo=u;render()}},
+ async copylink(){try{await navigator.clipboard.writeText(S.repo.html_url);toast('Link copied')}catch{toast('Couldn’t copy. Use “Open on GitHub” and copy the address.',1)}},
  uphere(){S.upDir=S.path;S.tab='up';render()},
- async view(d){const it=S.items[d.i];
+ async view(d){const it=S.items[d.i],im=IMG.exec(it.name);
+  if(im){const by=await run(async()=>unb64((await api('GET',`/repos/${S.repo.full_name}/git/blobs/${it.sha}`)).content));if(by)showImg(it.name,by,MIME[im[1].toLowerCase()]);return}
   const txt=await run(async()=>{const b=await api('GET',`/repos/${S.repo.full_name}/git/blobs/${it.sha}`);
    try{const t=new TextDecoder('utf-8',{fatal:true}).decode(unb64(b.content));return t.includes('\0')?null:t}catch{return null}});
   if(txt===undefined)return;
@@ -273,7 +363,7 @@ const A={
  async newbr(){const v=await ask('New draft',[{k:'n',l:'Name',req:1}],'Create','It starts as a copy of “'+S.branch+'”.');if(!v)return;
   const n=v.n.trim().replace(/\s+/g,'-');
   const ok=await run(async()=>{const h=await head();await api('POST',`/repos/${S.repo.full_name}/git/refs`,{ref:'refs/heads/'+n,sha:h.sha});S.branch=n;S.path='';return 1},'Draft created');if(ok)loadTab()},
- swbr(d){S.branch=S.brs[d.i];S.path='';S.tab='files';loadTab()},
+ swbr(d){S.branch=S.brs[d.i];S.path='';S.fq='';S.tab='files';loadTab()},
  async delbr(d){const b=S.brs[d.i];const v=await ask('Delete draft “'+b+'”?',[],'Delete','Its changes will be lost unless you already merged them.');if(!v)return;
   const ok=await run(async()=>{await api('DELETE',`/repos/${S.repo.full_name}/git/refs/heads/${ep(b)}`);if(S.branch===b)S.branch=S.repo.default_branch;return 1},'Draft deleted');if(ok)loadTab()},
  async newpr(){const v=await ask('Send changes for merging',[{k:'t',l:'Title',v:'Changes from '+S.branch,req:1},{k:'b',l:'Notes (optional)'}],'Create');if(!v)return;
@@ -291,25 +381,30 @@ const A={
   if(ok!==undefined){S.repo=null;await run(loadRepos);drawSide();render()}}};
 document.addEventListener('click',async e=>{const a=e.target.closest('[data-a]');if(!a||!A[a.dataset.a])return;e.preventDefault();if(WAIT.has(a.dataset.a))await Q;A[a.dataset.a](a.dataset)});
 document.addEventListener('change',e=>{const t=e.target;
- if(t.dataset.s!==undefined){if(t.dataset.s==='*')S.sel=t.checked?new Set(S.items.map(x=>x.path)):new Set();else t.checked?S.sel.add(t.dataset.s):S.sel.delete(t.dataset.s);render();return}
+ if(t.dataset.s!==undefined){if(t.dataset.s==='*')S.sel=t.checked?new Set(S.items.filter(x=>x.name.toLowerCase().includes(S.fq.toLowerCase())).map(x=>x.path)):new Set();else t.checked?S.sel.add(t.dataset.s):S.sel.delete(t.dataset.s);renderPane();return}
+ if(t.id==='so'){S.sort=t.value;sortItems();renderPane();return}
  if(t.id==='br'){Q.then(()=>{S.branch=t.value;S.path='';loadTab()});return}
  if(['zf','ff','df'].includes(t.id)&&t.files.length){addFiles([...t.files]);t.value=''}
- if(t.dataset.k){S[t.dataset.k]=t.type==='checkbox'?t.checked:t.value;if(t.type==='checkbox')render()}});
+ if(t.dataset.k){S[t.dataset.k]=t.type==='checkbox'?t.checked:t.value;if(t.type==='checkbox')renderPane()}});
 document.addEventListener('input',e=>{const t=e.target;
  if(t.id==='q'){const q=t.value.toLowerCase();document.querySelectorAll('#side li').forEach(li=>li.hidden=!li.dataset.n.includes(q))}
+ else if(t.id==='fq'){S.fq=t.value;if(S.sel.size){S.sel.clear();renderPane();const f=$('#fq');f.focus();f.setSelectionRange(f.value.length,f.value.length)}else filterRows()}
  else if(t.dataset.k&&t.type!=='checkbox')S[t.dataset.k]=t.value});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('a[data-a]')){e.preventDefault();e.target.click()}if(e.key==='Escape')document.body.classList.remove('nav')});
 ['dragenter','dragover'].forEach(n=>document.addEventListener(n,e=>{const z=e.target.closest&&e.target.closest('#dz');if(z){e.preventDefault();z.classList.add('o')}}));
-['dragleave','drop'].forEach(n=>document.addEventListener(n,e=>{const z=e.target.closest&&e.target.closest('#dz');if(z){e.preventDefault();z.classList.remove('o');if(n==='drop'&&e.dataTransfer.files.length)addFiles([...e.dataTransfer.files])}}));
+['dragleave','drop'].forEach(n=>document.addEventListener(n,e=>{const z=e.target.closest&&e.target.closest('#dz');if(z){e.preventDefault();z.classList.remove('o');if(n==='drop'&&e.dataTransfer.files.length)dropFiles(e.dataTransfer).then(addFiles)}}));
 
 addEventListener('beforeunload',e=>{if(S.pend){e.preventDefault();e.returnValue=''}});
 /* ---------- sign in ---------- */
 async function signIn(tok,remember){
  S.tok=tok.trim();if(!S.tok)return;
- const ok=await run(async()=>{S.me=await api('GET','/user');await loadRepos();return 1});
+ const ok=await run(async()=>{try{S.me=await api('GET','/user')}catch(e){if(e.status===401)try{localStorage.removeItem('pl_t')}catch{};throw e}await loadRepos();return 1});
  if(!ok)return;
  if(remember)try{localStorage.setItem('pl_t',S.tok)}catch{}
  $('#login').hidden=true;$('#app').hidden=false;drawSide();render()}
 $('#si').onclick=()=>signIn($('#tk').value,$('#rm').checked);
+$('#sh').onchange=e=>$('#tk').type=e.target.checked?'text':'password';
+applyTheme();a11y(document);
 $('#tk').onkeydown=e=>{if(e.key==='Enter')$('#si').click()};
 try{const t=localStorage.getItem('pl_t');if(t){$('#rm').checked=true;signIn(t,true)}}catch{}
 </script></body></html>
